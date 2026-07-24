@@ -44,12 +44,16 @@ setInterval(() => {
     }
     const img = clipboard.readImage()
     if (!img.isEmpty()) {
+      const size = img.getSize()
+      if (size.width * size.height > 8000000) return
       const png = img.toPNG()
+      if (png.length > 10000000) return
       const hash = crypto.createHash('md5').update(png).digest('hex')
       if (hash !== lastImgHash) {
         lastImgHash = hash
         const dataUrl = 'data:image/png;base64,' + png.toString('base64')
         if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send('clipboard-image', dataUrl)
+        if (popupWindow && !popupWindow.isDestroyed()) popupWindow.webContents.send('clipboard-image', dataUrl)
       }
     }
   } catch (_) {}
@@ -67,7 +71,7 @@ app.whenReady().then(() => {
   mainWindow.loadFile(path.join(__dirname, 'dist', 'index.html'))
   mainWindow.on('close', (e) => { if (!isQuitting) { e.preventDefault(); mainWindow?.hide() } })
   globalShortcut.register('Alt+Shift+V', () => { showPopup() })
-  app.setLoginItemSettings({ openAtLogin: true })
+  app.setLoginItemSettings({ openAtLogin: true, path: process.execPath, args: [path.join(__dirname, 'launcher.cjs')] })
 })
 
 app.on('window-all-closed', () => {})
