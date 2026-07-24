@@ -32,4 +32,11 @@ export async function deleteMemo(id:number):Promise<void>{const db=await openDB(
 
 export async function getSetting(key:string,fallback:number=30):Promise<number>{const db=await openDB();return new Promise((resolve)=>{const req=db.transaction(STORE_SETTINGS,'readonly').objectStore(STORE_SETTINGS).get(key);req.onsuccess=()=>resolve(req.result??fallback);req.onerror=()=>resolve(fallback)})}
 
-export async function setSetting(key:string,value:number):Promise<void>{const db=await openDB();return new Promise((resolve)=>{db.transaction(STORE_SETTINGS,'readwrite').objectStore(STORE_SETTINGS).put(value,key);resolve()})}
+export async function setSetting(key:string,value:number|string):Promise<void>{const db=await openDB();return new Promise((resolve)=>{db.transaction(STORE_SETTINGS,'readwrite').objectStore(STORE_SETTINGS).put(value,key);resolve()})}
+
+export async function getSettingStr(key:string,fallback=''):Promise<string>{const db=await openDB();return new Promise((resolve)=>{const req=db.transaction(STORE_SETTINGS,'readonly').objectStore(STORE_SETTINGS).get(key);req.onsuccess=()=>resolve(typeof req.result==='string'?req.result:fallback);req.onerror=()=>resolve(fallback)})}
+
+function simpleHash(s:string):string{let h=0;for(let i=0;i<s.length;i++){h=((h<<5)-h)+s.charCodeAt(i);h|=0}return'pw_'+h.toString(36)}
+export async function hasPassword():Promise<boolean>{return(await getSettingStr('lock_pw',''))!==''}
+export async function checkPassword(pw:string):Promise<boolean>{return(await getSettingStr('lock_pw',''))===simpleHash(pw)}
+export async function setPassword(pw:string):Promise<void>{await setSetting('lock_pw',pw?simpleHash(pw):'')}
